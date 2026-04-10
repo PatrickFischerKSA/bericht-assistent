@@ -1,0 +1,277 @@
+:root {
+  --bg: #f6f2ea;
+  --panel: rgba(255, 255, 255, 0.78);
+  --panel-strong: #ffffff;
+  --text: #1d2a2f;
+  --muted: #5e6a70;
+  --line: rgba(29, 42, 47, 0.12);
+  --accent: #0f766e;
+  --accent-strong: #115e59;
+  --warm: #b45309;
+  --danger: #b42318;
+  --shadow: 0 20px 60px rgba(29, 42, 47, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.16), transparent 30%),
+    radial-gradient(circle at right 10% top 10%, rgba(180, 83, 9, 0.14), transparent 28%),
+    linear-gradient(180deg, #f6f2ea 0%, #efe8da 100%);
+}
+
+a {
+  color: inherit;
+}
+
+.shell {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 32px 18px 56px;
+  display: grid;
+  gap: 18px;
+}
+
+.shell--landing {
+  min-height: 100vh;
+  place-content: center;
+}
+
+.card,
+.hero-card,
+.status-bar {
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.hero-card,
+.card {
+  padding: 26px;
+}
+
+.hero-card--compact {
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+.status-bar {
+  padding: 18px 22px;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.status-bar strong,
+.question-label,
+h1,
+h2 {
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2.1rem, 6vw, 4rem);
+  line-height: 0.94;
+}
+
+h2 {
+  margin: 0;
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.lead,
+.section-head p,
+.meta-note,
+.alert,
+.status-bar span,
+.scale-hint,
+textarea,
+input {
+  color: var(--muted);
+}
+
+.lead {
+  font-size: 1.06rem;
+  line-height: 1.6;
+}
+
+.hero-actions,
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.button {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: var(--accent);
+  color: #f6fffd;
+  cursor: pointer;
+  text-decoration: none;
+  font: inherit;
+  transition: transform 120ms ease, background 120ms ease;
+}
+
+.button:hover {
+  transform: translateY(-1px);
+  background: var(--accent-strong);
+}
+
+.button--ghost {
+  background: rgba(17, 94, 89, 0.08);
+  color: var(--accent-strong);
+}
+
+.stack {
+  display: grid;
+  gap: 14px;
+}
+
+.stack--large {
+  gap: 26px;
+}
+
+.field,
+.survey-section,
+.question-card {
+  display: grid;
+  gap: 10px;
+}
+
+.survey-section {
+  padding-top: 10px;
+}
+
+.question-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.section-head {
+  display: grid;
+  gap: 8px;
+}
+
+input,
+textarea {
+  width: 100%;
+  border: 1px solid rgba(29, 42, 47, 0.18);
+  border-radius: 16px;
+  padding: 14px 15px;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 112px;
+}
+
+fieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.scale-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.scale-grid--5 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.scale-grid--10 {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.scale-option {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 56px;
+  border-radius: 18px;
+  border: 1px solid rgba(17, 94, 89, 0.18);
+  background: rgba(15, 118, 110, 0.06);
+  font-weight: 600;
+  color: var(--accent-strong);
+  cursor: pointer;
+}
+
+.scale-option input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+
+.scale-option.is-active,
+.scale-option:has(input:checked) {
+  border-color: rgba(17, 94, 89, 0.56);
+  background: rgba(15, 118, 110, 0.16);
+}
+
+.scale-hint {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 0.9rem;
+}
+
+.alert {
+  border-radius: 18px;
+  padding: 14px 16px;
+  border-left: 4px solid currentColor;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.alert--error {
+  color: var(--danger);
+}
+
+.alert--notice {
+  color: var(--warm);
+}
+
+@media (max-width: 720px) {
+  .shell {
+    padding: 18px 14px 40px;
+  }
+
+  .hero-card,
+  .card {
+    padding: 20px;
+  }
+
+  .scale-grid--5,
+  .scale-grid--10 {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}

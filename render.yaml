@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: pruefungsnavigator-evaluation
+    runtime: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: TEACHER_DASHBOARD_PASSWORD
+        sync: false
+      - key: NAVIGATOR_URL
+        value: https://patrickfischerksa.github.io/pruefungsnavigator/

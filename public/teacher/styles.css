@@ -1,0 +1,270 @@
+:root {
+  --bg: #f3efe8;
+  --panel: rgba(255, 255, 255, 0.82);
+  --line: rgba(28, 41, 48, 0.12);
+  --text: #1c2930;
+  --muted: #5d6b72;
+  --accent: #8a4f1d;
+  --accent-soft: rgba(138, 79, 29, 0.1);
+  --green: #0f766e;
+  --green-soft: rgba(15, 118, 110, 0.12);
+  --shadow: 0 22px 60px rgba(28, 41, 48, 0.12);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Avenir Next", "Segoe UI", sans-serif;
+  color: var(--text);
+  background:
+    radial-gradient(circle at top right, rgba(138, 79, 29, 0.16), transparent 28%),
+    radial-gradient(circle at top left, rgba(15, 118, 110, 0.12), transparent 28%),
+    linear-gradient(180deg, #f3efe8 0%, #ece4d8 100%);
+}
+
+.teacher-shell {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 28px 18px 54px;
+  display: grid;
+  gap: 18px;
+}
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 22px;
+  backdrop-filter: blur(12px);
+}
+
+.hero,
+.panel-head,
+.stats-grid,
+.filter-row,
+.class-summary-grid,
+.average-list,
+.response-grid,
+.response-times {
+  display: grid;
+  gap: 14px;
+}
+
+.hero {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+h1,
+h2,
+h3,
+.stat-card strong,
+.average-metric {
+  margin: 0;
+  font-family: "Iowan Old Style", "Palatino Linotype", serif;
+}
+
+h1 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  line-height: 0.95;
+}
+
+h2 {
+  font-size: clamp(1.3rem, 2.4vw, 1.9rem);
+}
+
+.lead,
+.response-meta,
+.response-times,
+.answer-row p,
+.class-summary-card span,
+.average-card span,
+.stat-card span {
+  color: var(--muted);
+}
+
+.button {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  text-decoration: none;
+  color: #fffaf4;
+  background: var(--accent);
+}
+
+.button--ghost {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.stat-card {
+  display: grid;
+  gap: 6px;
+}
+
+.stat-card strong {
+  font-size: 2rem;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+  max-width: 360px;
+}
+
+select {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  font: inherit;
+  background: #fff;
+}
+
+.class-summary-grid,
+.average-list {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.class-summary-card,
+.average-card,
+.response-card {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.class-summary-card,
+.average-card {
+  padding: 16px;
+  display: grid;
+  gap: 6px;
+}
+
+.average-metric {
+  font-size: 1.8rem;
+}
+
+.response-list {
+  display: grid;
+  gap: 14px;
+}
+
+.response-card summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+}
+
+.response-card summary::-webkit-details-marker {
+  display: none;
+}
+
+.response-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.response-body {
+  padding: 0 18px 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.response-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.response-section {
+  display: grid;
+  gap: 12px;
+}
+
+.answer-row {
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.answer-row p {
+  margin: 8px 0 0;
+  white-space: pre-wrap;
+}
+
+.response-times {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+
+.badge--submitted {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.badge--draft {
+  background: rgba(138, 79, 29, 0.1);
+  color: var(--accent);
+}
+
+.empty {
+  color: var(--muted);
+}
+
+@media (max-width: 860px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-actions {
+    justify-content: flex-start;
+  }
+
+  .response-card summary {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .response-meta {
+    justify-content: flex-start;
+  }
+}
