@@ -10,6 +10,7 @@ Die App bietet:
 - passwortgeschütztes Lehrerdashboard
 - Übersicht über alle Antworten, Klassenfilter und CSV-Export
 - dateibasierte Speicherung in `data/pruefungsnavigator-evaluation-store.json`
+- vorbereitete Render-Konfiguration mit persistentem Speicher
 
 ## Start
 
@@ -44,3 +45,30 @@ Optional kannst du mit `NAVIGATOR_URL` einen anderen Link zum Prüfungsnavigator
 
 Die Antworten werden lokal als JSON-Datei gespeichert. Auf Hosting-Plattformen ohne persistentes Volume
 ist dieses Dateisystem nicht dauerhaft. Für längeren Live-Betrieb solltest du später persistenten Storage ergänzen.
+
+## Render
+
+Das Repo ist für Render als Node Web Service vorbereitet.
+
+In [render.yaml](/Users/patrickfischer/Documents/New%20project/pruefungsnavigator_evaluation/render.yaml) ist bereits hinterlegt:
+
+- `npm install` als Build Command
+- `npm start` als Start Command
+- `HOST=0.0.0.0`
+- `DATA_DIR=/var/data`
+- `healthCheckPath=/healthz`
+- persistente Disk unter `/var/data`
+
+Für Render solltest du mindestens diese Variable setzen:
+
+- `TEACHER_DASHBOARD_PASSWORD`
+
+Optional:
+
+- `NAVIGATOR_URL`
+
+Wichtig:
+
+- Die Antworten werden auf Render in der persistenten Disk unter `/var/data/pruefungsnavigator-evaluation-store.json` gespeichert.
+- Wenn du `render.yaml` beim Erstellen des Services verwendest, ist die Grundkonfiguration bereits vorbereitet.
+- Nach dem ersten Deploy erreichst du die App über die von Render vergebene URL.

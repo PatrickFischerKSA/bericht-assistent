@@ -156,6 +156,10 @@ export function createApp() {
     response.json(await buildBootstrapPayload(request));
   });
 
+  app.get("/healthz", (_request, response) => {
+    response.json({ ok: true });
+  });
+
   app.post("/api/register", async (request, response) => {
     try {
       const session = await updateEvaluationStore(async (store) => {

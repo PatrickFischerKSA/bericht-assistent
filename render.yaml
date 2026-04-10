@@ -4,9 +4,17 @@ services:
     runtime: node
     buildCommand: npm install
     startCommand: npm start
+    plan: starter
+    healthCheckPath: /healthz
+    disk:
+      name: pruefungsnavigator-evaluation-data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: HOST
         value: 0.0.0.0
+      - key: DATA_DIR
+        value: /var/data
       - key: TEACHER_DASHBOARD_PASSWORD
         sync: false
       - key: NAVIGATOR_URL
