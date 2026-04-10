@@ -296,4 +296,20 @@ async function handleSave(submit) {
   }
 }
 
-render();
+async function init() {
+  try {
+    if (!state.questions.length && !state.session && !state.navigatorUrl) {
+      const payload = await request("/api/bootstrap");
+      state.navigatorUrl = payload.navigatorUrl || "";
+      state.questions = payload.questions || [];
+      state.session = payload.session || null;
+    }
+  } catch (error) {
+    state.error = error.message;
+  } finally {
+    state.loading = false;
+    render();
+  }
+}
+
+init();
