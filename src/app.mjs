@@ -13,6 +13,7 @@ import {
   submitSurvey,
   updateEvaluationStore
 } from "./services/evaluation-store.mjs";
+import { analyzeReportSource, buildWordReportHtml, fetchSourceFromUrl } from "./services/report-assistant.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -56,11 +57,24 @@ function renderHomePage() {
           <div class="hero-actions">
             <a class="button" href="/student">Zur Schüler*innen-Befragung</a>
             <a class="button button--ghost" href="/teacher-entry">Zum Lehrerdashboard</a>
+            <a class="button button--ghost" href="/bericht-assistent">Zum Berichtsassistenten</a>
             <a class="button button--ghost" href="${NAVIGATOR_URL}" target="_blank" rel="noreferrer">Prüfungsnavigator öffnen</a>
           </div>
         </section>
       </main>
     `
+  });
+}
+
+function renderReportAssistantPage() {
+  return renderPage({
+    title: "Berichtsassistent",
+    stylesheet: "/report-assistant/styles.css",
+    script: "/report-assistant/app.js",
+    config: {
+      analyzeUrlEndpoint: "/api/report-assistant/fetch-url"
+    },
+    body: '<main id="report-assistant-app" class="report-shell"></main>'
   });
 }
 
@@ -141,6 +155,10 @@ export function createApp() {
     response.send(renderHomePage());
   });
 
+  app.get("/bericht-assistent", (_request, response) => {
+    response.send(renderReportAssistantPage());
+  });
+
   app.get("/student", async (request, response) => {
     const bootstrap = await buildBootstrapPayload(request);
     response.send(renderPage({
@@ -158,6 +176,48 @@ export function createApp() {
 
   app.get("/healthz", (_request, response) => {
     response.json({ ok: true });
+  });
+
+  app.post("/api/report-assistant/fetch-url", async (request, response) => {
+    try {
+      const source = await fetchSourceFromUrl(request.body?.url || "");
+      const analysis = analyzeReportSource({
+        text: source.text,
+        title: source.title,
+        sourceLabel: source.url
+      });
+      response.json({
+        source,
+        analysis
+      });
+    } catch (error) {
+      response.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/report-assistant/analyze-text", (request, response) => {
+    try {
+      const analysis = analyzeReportSource({
+        text: request.body?.text || "",
+        title: request.body?.title || "",
+        sourceLabel: request.body?.sourceLabel || ""
+      });
+      response.json({ analysis });
+    } catch (error) {
+      response.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/report-assistant/export.doc", (request, response) => {
+    try {
+      const filename = String(request.body?.filename || "beurteilungsbericht").replace(/[^a-z0-9äöüß_-]+/gi, "-");
+      const html = buildWordReportHtml(request.body || {});
+      response.setHeader("Content-Type", "application/msword; charset=utf-8");
+      response.setHeader("Content-Disposition", `attachment; filename="${filename || "beurteilungsbericht"}.doc"`);
+      response.send(html);
+    } catch (error) {
+      response.status(400).json({ error: error.message });
+    }
   });
 
   app.post("/api/register", async (request, response) => {

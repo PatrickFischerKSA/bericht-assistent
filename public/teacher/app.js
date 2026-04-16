@@ -152,6 +152,7 @@ function render() {
       </div>
       <div class="hero-actions">
         <a class="button button--ghost" href="${escapeHtml(config.navigatorUrl || "#")}" target="_blank" rel="noreferrer">Prüfungsnavigator</a>
+        <a class="button button--ghost" href="/bericht-assistent">Berichtsassistent</a>
         <a class="button button--ghost" href="${escapeHtml(config.exportUrl || "/api/teacher/export.csv")}">CSV exportieren</a>
         <a class="button button--ghost" href="/auth/teacher/logout">Abmelden</a>
       </div>
