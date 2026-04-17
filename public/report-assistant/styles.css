@@ -55,7 +55,9 @@ body {
 .input-grid,
 .meta-grid,
 .criteria-grid,
-.section-head {
+.section-head,
+.audio-meta,
+.audio-actions {
   display: grid;
   gap: 14px;
 }
@@ -71,7 +73,7 @@ body {
 }
 
 .input-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
 .meta-grid {
@@ -195,6 +197,40 @@ textarea {
   background: rgba(255, 255, 255, 0.68);
 }
 
+.audio-card {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.68);
+  display: grid;
+  gap: 12px;
+}
+
+.audio-meta {
+  grid-auto-flow: column;
+  justify-content: start;
+  align-items: center;
+  gap: 12px;
+}
+
+.audio-meta span {
+  color: var(--muted);
+}
+
+.audio-card audio {
+  width: 100%;
+}
+
+.audio-actions {
+  grid-auto-flow: row;
+  justify-items: start;
+}
+
+.hint code {
+  font-family: "SFMono-Regular", "Consolas", monospace;
+  font-size: 0.95em;
+}
+
 .criterion-head {
   display: flex;
   justify-content: space-between;
@@ -219,6 +255,18 @@ textarea {
   padding-inline: 8px;
 }
 
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.toggle-row input {
+  width: auto;
+}
+
 @media (max-width: 980px) {
   .hero,
   .input-grid,
@@ -228,5 +276,10 @@ textarea {
 
   .hero-actions {
     justify-items: start;
+  }
+
+  .audio-meta {
+    grid-auto-flow: row;
+    gap: 6px;
   }
 }

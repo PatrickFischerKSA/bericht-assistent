@@ -13,7 +13,13 @@ import {
   submitSurvey,
   updateEvaluationStore
 } from "./services/evaluation-store.mjs";
-import { analyzeReportSource, buildWordReportHtml, fetchSourceFromUrl } from "./services/report-assistant.mjs";
+import {
+  analyzeReportSource,
+  buildWordReportHtml,
+  convertMp3ToTextWithZamzar,
+  fetchSourceFromUrl,
+  isZamzarConfigured
+} from "./services/report-assistant.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,7 +78,8 @@ function renderReportAssistantPage() {
     stylesheet: "/report-assistant/styles.css",
     script: "/report-assistant/app.js",
     config: {
-      analyzeUrlEndpoint: "/api/report-assistant/fetch-url"
+      analyzeUrlEndpoint: "/api/report-assistant/fetch-url",
+      zamzarEnabled: isZamzarConfigured()
     },
     body: '<main id="report-assistant-app" class="report-shell"></main>'
   });
@@ -200,7 +207,9 @@ export function createApp() {
       const analysis = analyzeReportSource({
         text: request.body?.text || "",
         title: request.body?.title || "",
-        sourceLabel: request.body?.sourceLabel || ""
+        sourceLabel: request.body?.sourceLabel || "",
+        assignmentText: request.body?.assignmentText || "",
+        assignmentTitle: request.body?.assignmentTitle || ""
       });
       response.json({ analysis });
     } catch (error) {
@@ -219,6 +228,40 @@ export function createApp() {
       response.status(400).json({ error: error.message });
     }
   });
+
+  app.post(
+    "/api/report-assistant/zamzar/mp3-to-text",
+    express.raw({ type: ["audio/mpeg", "audio/mp3", "application/octet-stream"], limit: "60mb" }),
+    async (request, response) => {
+      if (!isZamzarConfigured()) {
+        return response.status(503).json({
+          error: "Zamzar ist auf dem Server noch nicht konfiguriert. Bitte ZAMZAR_API_KEY setzen."
+        });
+      }
+
+      try {
+        const filename = decodeURIComponent(String(request.headers["x-file-name"] || "audio.mp3"));
+        const result = await convertMp3ToTextWithZamzar({
+          buffer: request.body,
+          filename,
+          targetFormat: "txt"
+        });
+        return response.json({
+          source: {
+            title: filename,
+            sourceLabel: `Zamzar-Transkript aus ${filename}`,
+            text: result.text
+          },
+          job: {
+            id: result.job?.id || null,
+            status: result.job?.status || null
+          }
+        });
+      } catch (error) {
+        return response.status(400).json({ error: error.message });
+      }
+    }
+  );
 
   app.post("/api/register", async (request, response) => {
     try {

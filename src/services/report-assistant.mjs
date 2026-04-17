@@ -145,6 +145,8 @@ const CRITERIA = [
   }
 ];
 
+const ZAMZAR_API_BASE = "https://api.zamzar.com/v1";
+
 function scoreFromRanges(value, thresholds) {
   if (value >= thresholds[2]) {
     return 4;
@@ -215,6 +217,17 @@ function countKeywordHits(searchText, keywords) {
   }, 0);
 }
 
+function countNegatedKeywordHits(searchText, keywords) {
+  return keywords.reduce((sum, keyword) => {
+    const escapedKeyword = escapeRegExp(keyword.toLowerCase());
+    const beforePattern = new RegExp(`\\b(?:nicht|kein(?:e|en|er|em)?|ohne)\\b(?:\\W+\\w+){0,4}\\W+${escapedKeyword}\\b`, "g");
+    const afterPattern = new RegExp(`\\b${escapedKeyword}\\b(?:\\W+\\w+){0,4}\\W+\\b(?:fehlt|fehlen|optional|freiwillig)\\b`, "g");
+    const beforeMatches = searchText.match(beforePattern);
+    const afterMatches = searchText.match(afterPattern);
+    return sum + (beforeMatches ? beforeMatches.length : 0) + (afterMatches ? afterMatches.length : 0);
+  }, 0);
+}
+
 function escapeRegExp(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -246,6 +259,14 @@ function computeMetrics(text) {
   };
 }
 
+function defaultAssignmentScope(id) {
+  return id === "overall";
+}
+
+function buildOutOfScopeComment(label, assignmentTitle) {
+  return `${label} steht im${assignmentTitle ? ` Auftrag „${assignmentTitle}“` : " Auftrag"} nicht ausdrücklich im Vordergrund. Dieser Aspekt sollte daher nur ergänzend und nicht als zentrales Bewertungskriterium gewichtet werden.`;
+}
+
 function summarizeText(metrics, sourceTitle) {
   const base = `Grundlage der Analyse ist ${sourceTitle ? `„${sourceTitle}“` : "das eingelesene Material"} mit ungefähr ${metrics.wordCount} Wörtern.`;
   if (metrics.wordCount >= 1400) {
@@ -257,33 +278,61 @@ function summarizeText(metrics, sourceTitle) {
   return `${base} Die Materialbasis ist eher knapp; Kommentare sollten deshalb besonders sorgfältig händisch überprüft und ergänzt werden.`;
 }
 
-export function analyzeReportSource({ text = "", title = "", sourceLabel = "" } = {}) {
+export function analyzeReportSource({
+  text = "",
+  title = "",
+  sourceLabel = "",
+  assignmentText = "",
+  assignmentTitle = ""
+} = {}) {
   const cleanedText = cleanText(/<[^>]+>/.test(text) ? stripHtml(text) : text);
   if (!cleanedText) {
     throw new Error("Es konnte kein auswertbarer Text erkannt werden.");
   }
 
   const metrics = computeMetrics(cleanedText);
+  const cleanedAssignmentText = cleanText(/<[^>]+>/.test(assignmentText) ? stripHtml(assignmentText) : assignmentText);
+  const assignmentSearchText = cleanedAssignmentText ? normalizeForSearch(cleanedAssignmentText) : "";
+  const assignmentMetrics = cleanedAssignmentText ? computeMetrics(cleanedAssignmentText) : null;
+  const sourceSearchText = normalizeForSearch(cleanedText);
   const criteria = CRITERIA.map((criterion) => {
-    const hits = countKeywordHits(normalizeForSearch(cleanedText), criterion.keywords);
-    const points = criterion.score(metrics, hits);
+    const hits = countKeywordHits(sourceSearchText, criterion.keywords);
+    const assignmentHits = assignmentSearchText ? countKeywordHits(assignmentSearchText, criterion.keywords) : 0;
+    const negatedAssignmentHits = assignmentSearchText ? countNegatedKeywordHits(assignmentSearchText, criterion.keywords) : 0;
+    const effectiveAssignmentHits = Math.max(0, assignmentHits - negatedAssignmentHits);
+    const inScope = cleanedAssignmentText
+      ? effectiveAssignmentHits > 0 || defaultAssignmentScope(criterion.id)
+      : true;
+    const points = inScope ? criterion.score(metrics, hits) : null;
     return {
       id: criterion.id,
       label: criterion.label,
       points,
       maxPoints: 4,
-      comment: criterion.comment(points, metrics, hits)
+      included: inScope,
+      assignmentHits: effectiveAssignmentHits,
+      comment: inScope
+        ? criterion.comment(points, metrics, hits)
+        : buildOutOfScopeComment(criterion.label, assignmentTitle)
     };
   });
 
-  const totalPoints = criteria.reduce((sum, entry) => sum + entry.points, 0);
-  const maxPoints = criteria.reduce((sum, entry) => sum + entry.maxPoints, 0);
+  const totalPoints = criteria.reduce((sum, entry) => sum + (entry.included ? entry.points : 0), 0);
+  const maxPoints = criteria.reduce((sum, entry) => sum + (entry.included ? entry.maxPoints : 0), 0);
 
   return {
     title: title || sourceLabel || "Unbenannte Analysegrundlage",
     sourceLabel,
     metrics,
-    summary: summarizeText(metrics, title || sourceLabel),
+    assignment: cleanedAssignmentText
+      ? {
+          title: assignmentTitle || "Auftrag",
+          metrics: assignmentMetrics
+        }
+      : null,
+    summary: cleanedAssignmentText
+      ? `${summarizeText(metrics, title || sourceLabel)} Der hochgeladene Auftrag${assignmentTitle ? ` „${assignmentTitle}“` : ""} wurde bei der Gewichtung der Kriterien mitberücksichtigt.`
+      : summarizeText(metrics, title || sourceLabel),
     criteria,
     totalPoints,
     maxPoints
@@ -333,8 +382,8 @@ export function buildWordReportHtml(payload = {}) {
   const title = escapeHtml(payload.reportTitle || "Beurteilungsbericht");
   const meta = payload.meta || {};
   const criteria = Array.isArray(payload.criteria) ? payload.criteria : [];
-  const totalPoints = criteria.reduce((sum, entry) => sum + Number(entry.points || 0), 0);
-  const maxPoints = criteria.reduce((sum, entry) => sum + Number(entry.maxPoints || 4), 0);
+  const totalPoints = criteria.reduce((sum, entry) => sum + (entry.included ? Number(entry.points || 0) : 0), 0);
+  const maxPoints = criteria.reduce((sum, entry) => sum + (entry.included ? Number(entry.maxPoints || 4) : 0), 0);
 
   return `<!doctype html>
   <html lang="de">
@@ -362,6 +411,7 @@ export function buildWordReportHtml(payload = {}) {
         <p><strong>Datum:</strong> ${escapeHtml(meta.date || "")}</p>
         <p><strong>Thema:</strong> ${escapeHtml(meta.topic || "")}</p>
         <p><strong>Quelle:</strong> ${escapeHtml(meta.sourceTitle || "")}</p>
+        <p><strong>Auftrag:</strong> ${escapeHtml(meta.assignmentTitle || "")}</p>
       </section>
       <section class="summary">
         <h2>Gesamteindruck</h2>
@@ -371,7 +421,7 @@ export function buildWordReportHtml(payload = {}) {
         <section class="criterion">
           <div class="criterion-head">
             <strong>${escapeHtml(entry.label || "")}</strong>
-            <span>${escapeHtml(String(entry.points || 0))} / ${escapeHtml(String(entry.maxPoints || 4))}</span>
+            <span>${entry.included ? `${escapeHtml(String(entry.points || 0))} / ${escapeHtml(String(entry.maxPoints || 4))}` : "nicht gewichtet"}</span>
           </div>
           <p>${escapeHtml(entry.comment || "")}</p>
         </section>
@@ -387,4 +437,147 @@ function escapeHtml(value) {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+function buildBasicAuthHeader(apiKey) {
+  return `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}`;
+}
+
+function parseFailureMessage(payload, fallbackMessage) {
+  if (payload?.failure?.message) {
+    return payload.failure.message;
+  }
+  if (payload?.message) {
+    return payload.message;
+  }
+  if (payload?.errors && Array.isArray(payload.errors) && payload.errors[0]?.message) {
+    return payload.errors[0].message;
+  }
+  return fallbackMessage;
+}
+
+async function parseJsonSafely(response) {
+  const text = await response.text();
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+}
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function isZamzarConfigured() {
+  return Boolean(process.env.ZAMZAR_API_KEY);
+}
+
+export async function convertMp3ToTextWithZamzar({
+  buffer,
+  filename = "audio.mp3",
+  targetFormat = "txt",
+  pollDelayMs = 2500,
+  maxAttempts = 25
+} = {}) {
+  const apiKey = process.env.ZAMZAR_API_KEY;
+  if (!apiKey) {
+    throw new Error("Zamzar ist noch nicht konfiguriert. Bitte zuerst die Umgebungsvariable ZAMZAR_API_KEY setzen.");
+  }
+
+  if (!buffer || !(buffer instanceof Uint8Array) || buffer.byteLength === 0) {
+    throw new Error("Für die Zamzar-Umwandlung wurde keine MP3-Datei übergeben.");
+  }
+
+  const authHeader = buildBasicAuthHeader(apiKey);
+  const form = new FormData();
+  form.append("source_file", new Blob([buffer], { type: "audio/mpeg" }), filename);
+  form.append("target_format", targetFormat);
+
+  const createResponse = await fetch(`${ZAMZAR_API_BASE}/jobs`, {
+    method: "POST",
+    headers: {
+      Authorization: authHeader
+    },
+    body: form
+  });
+
+  const createPayload = await parseJsonSafely(createResponse);
+  if (!createResponse.ok) {
+    throw new Error(parseFailureMessage(createPayload, "Die MP3-Datei konnte nicht an Zamzar übergeben werden."));
+  }
+
+  const jobId = createPayload?.id;
+  if (!jobId) {
+    throw new Error("Zamzar hat keine gültige Job-ID zurückgegeben.");
+  }
+
+  let job = createPayload;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (job?.status === "successful" && Array.isArray(job.target_files) && job.target_files.length > 0) {
+      break;
+    }
+
+    if (job?.status === "failed") {
+      throw new Error(parseFailureMessage(job, "Die Zamzar-Umwandlung ist fehlgeschlagen."));
+    }
+
+    await delay(pollDelayMs);
+    const statusResponse = await fetch(`${ZAMZAR_API_BASE}/jobs/${jobId}`, {
+      headers: {
+        Authorization: authHeader
+      }
+    });
+    const statusPayload = await parseJsonSafely(statusResponse);
+    if (!statusResponse.ok) {
+      throw new Error(parseFailureMessage(statusPayload, "Der Zamzar-Status konnte nicht abgefragt werden."));
+    }
+    job = statusPayload;
+  }
+
+  if (job?.status !== "successful" || !Array.isArray(job.target_files) || job.target_files.length === 0) {
+    throw new Error("Zamzar hat nicht rechtzeitig ein Textresultat geliefert. Bitte versuche es erneut.");
+  }
+
+  const targetFileId = job.target_files[0]?.id;
+  if (!targetFileId) {
+    throw new Error("Zamzar hat kein herunterladbares Textresultat geliefert.");
+  }
+
+  const downloadResponse = await fetch(`${ZAMZAR_API_BASE}/files/${targetFileId}/content`, {
+    headers: {
+      Authorization: authHeader
+    },
+    redirect: "manual"
+  });
+
+  if (downloadResponse.status >= 300 && downloadResponse.status < 400) {
+    const redirectUrl = downloadResponse.headers.get("location");
+    if (!redirectUrl) {
+      throw new Error("Das Zamzar-Resultat verweist auf keinen gültigen Download-Link.");
+    }
+
+    const redirected = await fetch(redirectUrl);
+    if (!redirected.ok) {
+      throw new Error("Das konvertierte Textresultat konnte nicht heruntergeladen werden.");
+    }
+    return {
+      text: cleanText(await redirected.text()),
+      job
+    };
+  }
+
+  if (!downloadResponse.ok) {
+    const downloadPayload = await parseJsonSafely(downloadResponse);
+    throw new Error(parseFailureMessage(downloadPayload, "Das konvertierte Textresultat konnte nicht heruntergeladen werden."));
+  }
+
+  return {
+    text: cleanText(await downloadResponse.text()),
+    job
+  };
 }
